@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>CGPA Calculator</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&family=Poppins:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#fff;--soft:#fdf1f6;--card:#fff;--text:#1b2540;--muted:#5b6784;--pink:#e8528f;--pink2:#f9c6dc;--blue:#2f6fe4;--blue2:#dbe8ff;--line:#ecd9e3;color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0f1426;--soft:#161c34;--card:#1a213c;--text:#f2f4fb;--muted:#aab3cf;--pink:#ff7db0;--pink2:#5a2a43;--blue:#7fa8ff;--blue2:#233463;--line:#2c3558;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#0f1426;--soft:#161c34;--card:#1a213c;--text:#f2f4fb;--muted:#aab3cf;--pink:#ff7db0;--pink2:#5a2a43;--blue:#7fa8ff;--blue2:#233463;--line:#2c3558;color-scheme:dark}
+*{box-sizing:border-box}
+body{margin:0;background:linear-gradient(160deg,var(--soft),var(--bg) 40%);color:var(--text);font-family:Poppins,system-ui,sans-serif;line-height:1.5;min-height:100vh}
+.wrap{max-width:640px;margin:0 auto;padding:28px 18px 60px}
+h1{font-family:'Playfair Display',Georgia,serif;font-size:clamp(2rem,7vw,2.8rem);margin:0 0 4px;line-height:1.1}
+h1 span{color:var(--pink)}
+.sub{color:var(--muted);margin:0 0 22px;font-size:.95rem}
+.result{background:linear-gradient(135deg,var(--pink),var(--blue));color:#fff;border-radius:26px;padding:26px;text-align:center;margin-bottom:22px}
+.result .lab{font-size:.8rem;letter-spacing:.14em;text-transform:uppercase;opacity:.9}
+.result .big{font-family:'Playfair Display',serif;font-size:4rem;line-height:1.1;margin:4px 0}
+.result .cls{display:inline-block;background:rgba(255,255,255,.22);padding:5px 16px;border-radius:99px;font-weight:600;font-size:.9rem}
+.result .meta{margin-top:12px;font-size:.85rem;opacity:.92}
+.bar{display:flex;gap:10px;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap}
+.bar label{font-weight:600;font-size:.9rem}
+select,input{font:inherit;color:var(--text);background:var(--bg);border:1.5px solid var(--line);border-radius:12px;padding:9px 10px;min-width:0;width:100%}
+select:focus,input:focus{outline:none;border-color:var(--blue)}
+.bar select{width:auto}
+.sem{background:var(--card);border:1px solid var(--line);border-radius:22px;padding:18px;margin-bottom:16px}
+.sh{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}
+.sh h3{margin:0;font-size:1.05rem}
+.gpa{background:var(--blue2);color:var(--blue);font-weight:600;font-size:.85rem;padding:4px 12px;border-radius:99px}
+.hd,.row{display:grid;grid-template-columns:1fr 62px 72px 34px;gap:8px;align-items:center;margin-bottom:8px}
+.hd{font-size:.72rem;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.06em}
+.x{border:none;background:var(--pink2);color:var(--pink);border-radius:10px;height:36px;width:34px;font-size:1.1rem;cursor:pointer}
+.btn{border:none;cursor:pointer;font:inherit;font-weight:600;border-radius:99px;padding:10px 20px;font-size:.9rem}
+.add{background:var(--blue2);color:var(--blue)}
+.pri{background:var(--pink);color:#fff;width:100%;padding:14px}
+.ghost{background:none;color:var(--muted);text-decoration:underline;font-weight:500;padding:6px}
+.acts{display:flex;justify-content:space-between;align-items:center;margin-top:8px}
+.foot{text-align:center;margin-top:18px}
+.note{color:var(--muted);font-size:.78rem;text-align:center;margin-top:20px}
+</style></head><body>
+<div class="wrap">
+<h1>CGPA <span>Calculator</span></h1>
+<p class="sub">Add your courses, units and grades. Your GPA and CGPA update as you type.</p>
+
+<div class="result">
+<div class="lab">Your CGPA</div>
+<div class="big" id="cgpa">0.00</div>
+<div class="cls" id="cls">Add your courses</div>
+<div class="meta" id="meta"></div>
+</div>
+
+<div class="bar"><label for="scale">Grading scale</label>
+<select id="scale"><option value="5">5.0 scale (A = 5)</option><option value="4">4.0 scale (A = 4)</option></select></div>
+
+<div id="sems"></div>
+
+<button class="btn pri" id="addSem">+ Add semester</button>
+<div class="foot"><button class="btn ghost" id="reset">Reset everything</button></div>
+<p class="note">Class of degree follows the common Nigerian 5.0 system. Always confirm with your school’s own grading policy.</p>
+</div>
+
+<script>
+var SC={"5":{A:5,B:4,C:3,D:2,E:1,F:0},"4":{A:4,B:3,C:2,D:1,F:0}};
+var KEY="cgpa-calc-v1";
+var st=load();
+function fresh(){return {scale:"5",sems:[{courses:[{n:"",u:3,g:"A"},{n:"",u:3,g:"B"}]}]};}
+function load(){try{var r=localStorage.getItem(KEY);if(r){var o=JSON.parse(r);if(o&&o.sems&&o.sems.length)return o;}}catch(e){}return fresh();}
+function save(){try{localStorage.setItem(KEY,JSON.stringify(st));}catch(e){}}
+function esc(s){return String(s).replace(/&/g,"&amp;").replace(/"/g,"&quot;").replace(/</g,"&lt;");}
+function fix(){var m=SC[st.scale];st.sems.forEach(function(s){s.courses.forEach(function(c){if(!(c.g in m))c.g="F";});});}
+
+function render(){
+  fix();
+  var grades=Object.keys(SC[st.scale]);
+  document.getElementById("scale").value=st.scale;
+  var h="";
+  st.sems.forEach(function(s,i){
+    h+='<div class="sem"><div class="sh"><h3>Semester '+(i+1)+'</h3><span class="gpa" id="g'+i+'">GPA 0.00</span></div>';
+    h+='<div class="hd"><span>Course</span><span>Units</span><span>Grade</span><span></span></div>';
+    s.courses.forEach(function(c,j){
+      h+='<div class="row"><input placeholder="e.g. MTH 101" value="'+esc(c.n)+'" data-s="'+i+'" data-c="'+j+'" data-f="n">'
+       +'<input type="number" inputmode="numeric" min="0" max="12" value="'+c.u+'" data-s="'+i+'" data-c="'+j+'" data-f="u">'
+       +'<select data-s="'+i+'" data-c="'+j+'" data-f="g">'
+       +grades.map(function(g){return '<option'+(g===c.g?' selected':'')+'>'+g+'</option>';}).join("")
+       +'</select><button class="x" aria-label="Remove course" data-act="rc" data-s="'+i+'" data-c="'+j+'">×</button></div>';
+    });
+    h+='<div class="acts"><button class="btn add" data-act="ac" data-s="'+i+'">+ Add course</button>';
+    if(st.sems.length>1)h+='<button class="btn ghost" data-act="rs" data-s="'+i+'">Remove semester</button>';
+    h+='</div></div>';
+  });
+  document.getElementById("sems").innerHTML=h;
+  calc();
+}
+
+function calc(){
+  var m=SC[st.scale],tu=0,tp=0;
+  st.sems.forEach(function(s,i){
+    var u=0,p=0;
+    s.courses.forEach(function(c){var x=parseFloat(c.u)||0;u+=x;p+=x*m[c.g];});
+    tu+=u;tp+=p;
+    var el=document.getElementById("g"+i);
+    if(el)el.textContent="GPA "+(u?(p/u).toFixed(2):"0.00");
+  });
+  var cg=tu?tp/tu:0;
+  document.getElementById("cgpa").textContent=cg.toFixed(2);
+  document.getElementById("meta").textContent=tu?(tu+" total units · "+tp.toFixed(1)+" total points"):"";
+  var cls="Add your courses";
+  if(tu){
+    if(st.scale==="5"){
+      cls=cg>=4.5?"First Class":cg>=3.5?"Second Class Upper":cg>=2.4?"Second Class Lower":cg>=1.5?"Third Class":cg>=1?"Pass":"Below pass";
+    }else{
+      cls=cg>=3.5?"Excellent":cg>=3?"Very good":cg>=2?"Good":cg>=1?"Fair":"Below pass";
+    }
+  }
+  document.getElementById("cls").textContent=cls;
+  save();
+}
+
+document.getElementById("sems").addEventListener("input",function(e){
+  var t=e.target,f=t.dataset.f;if(!f)return;
+  st.sems[t.dataset.s].courses[t.dataset.c][f]=t.value;calc();
+});
+document.getElementById("sems").addEventListener("click",function(e){
+  var b=e.target.closest("[data-act]");if(!b)return;
+  var s=+b.dataset.s,c=+b.dataset.c,a=b.dataset.act;
+  if(a==="ac")st.sems[s].courses.push({n:"",u:3,g:"A"});
+  if(a==="rc"&&st.sems[s].courses.length>1)st.sems[s].courses.splice(c,1);
+  if(a==="rs")st.sems.splice(s,1);
+  render();
+});
+document.getElementById("addSem").onclick=function(){st.sems.push({courses:[{n:"",u:3,g:"A"}]});render();};
+document.getElementById("scale").onchange=function(){st.scale=this.value;render();};
+document.getElementById("reset").onclick=function(){if(confirm("Clear all semesters and start over?")){st=fresh();render();}};
+render();
+</script>
+</body></html>
